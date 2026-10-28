@@ -2,10 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    
+    <!-- БЕЗОПАСНОСТЬ: Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Легко бросить курить</title>
     
-    <!-- ВАЖНО: базовый путь для всех ресурсов -->
+    <!-- Базовый путь для GitHub Pages -->
     <base href="./">
     
     <!-- PWA -->
@@ -21,12 +25,27 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+    <!-- ЭКРАН БЛОКИРОВКИ PIN-КОДОМ -->
+    <div id="pin-screen" class="pin-screen" style="display: none;">
+        <div class="pin-container">
+            <h2>🔒 Код доступа</h2>
+            <p>Для защиты личных данных</p>
+            <input type="password" id="pin-input" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="••••">
+            <p id="pin-error" class="pin-error" style="display: none;">Неверный код</p>
+            <button class="btn btn-primary" onclick="checkPin()">Войти</button>
+            <button class="btn btn-secondary" onclick="forgotPin()" style="margin-top: 10px; font-size: 0.9em;">Забыли код? (Сброс данных)</button>
+        </div>
+    </div>
+
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
     <div class="container">
         <header>
             <h1>🚭 НеКурю</h1>
             <p id="greeting">Привет!</p>
         </header>
 
+        <!-- Главный экран -->
         <div id="main-screen" class="screen active">
             <div class="stats-grid">
                 <div class="stat-card">
@@ -47,7 +66,7 @@
             </div>
 
             <div class="health-timeline">
-                <h3>️ Восстановление организма</h3>
+                <h3>⏱️ Восстановление организма</h3>
                 <div id="health-milestones"></div>
             </div>
 
@@ -58,6 +77,7 @@
             </div>
         </div>
 
+        <!-- Экран профиля -->
         <div id="profile-screen" class="screen">
             <h2>Личный профиль</h2>
             <form id="profile-form">
@@ -74,11 +94,28 @@
                 <label>Стоимость пачки (₽): <input type="number" id="pack-price" min="1" required></label>
                 <label>Сигарет в пачке: <input type="number" id="cigarettes-per-pack" min="1" value="20" required></label>
                 <label>Цель для сэкономленных денег: <input type="text" id="savings-goal" placeholder="Например: Новый ноутбук"></label>
-                <button type="submit" class="btn btn-primary">Сохранить</button>
+                
+                <!-- Настройка PIN -->
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                <h3>🔐 Безопасность</h3>
+                <label>Новый PIN-код (4 цифры): <input type="password" id="new-pin" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="••••"></label>
+                <button type="button" class="btn btn-warning" onclick="setNewPinFromForm()">Установить PIN</button>
+                
+                <!-- Резервное копирование -->
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                <h3>💾 Резервное копирование</h3>
+                <button type="button" class="btn btn-success" onclick="exportData()">📥 Скачать резервную копию</button>
+                <label class="btn btn-primary" style="text-align: center; cursor: pointer;">
+                    📤 Загрузить резервную копию
+                    <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(this)">
+                </label>
+                
+                <button type="submit" class="btn btn-primary">Сохранить профиль</button>
                 <button type="button" class="btn btn-secondary" onclick="showScreen('main-screen')">Назад</button>
             </form>
         </div>
 
+        <!-- Экран календаря -->
         <div id="calendar-screen" class="screen">
             <h2>Календарь</h2>
             <div class="calendar-header">
@@ -91,6 +128,7 @@
             <button class="btn btn-secondary" onclick="showScreen('main-screen')">Назад</button>
         </div>
 
+        <!-- Модальное окно SOS -->
         <div id="sos-modal" class="modal">
             <div class="modal-content">
                 <h2>🧘 Дыши глубоко</h2>
@@ -103,6 +141,7 @@
             </div>
         </div>
 
+        <!-- Модальное окно срыва -->
         <div id="relapse-modal" class="modal">
             <div class="modal-content">
                 <h2>📝 Запись о срыве</h2>

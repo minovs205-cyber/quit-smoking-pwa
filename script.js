@@ -1,4 +1,6 @@
-// Регистрация Service Worker
+// ============================================
+// РЕГИСТРАЦИЯ SERVICE WORKER
+// ============================================
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
@@ -11,19 +13,112 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Инициализация
+// ============================================
+// БЕЗОПАСНОСТЬ: PIN-КОД
+// ============================================
+const APP_PIN_KEY = 'app_pin';
+const isPinSet = localStorage.getItem(APP_PIN_KEY);
+
+// Если PIN установлен — показываем экран блокировки
+if (isPinSet) {
+    document.getElementById('pin-screen').style.display = 'flex';
+    document.querySelector('.container').style.display = 'none';
+}
+
+function checkPin() {
+    const input = document.getElementById('pin-input').value;
+    if (input === localStorage.getItem(APP_PIN_KEY)) {
+        document.getElementById('pin-screen').style.display = 'none';
+        document.querySelector('.container').style.display = 'block';
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-error').style.display = 'none';
+    } else {
+        document.getElementById('pin-error').style.display = 'block';
+        document.getElementById('pin-input').value = '';
+        if (navigator.vibrate) navigator.vibrate(200);
+    }
+}
+
+function forgotPin() {
+    if (confirm('ВНИМАНИЕ: Это полностью удалит все ваши данные (профиль, календарь, настройки). Продолжить?')) {
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+function setNewPin(newPin) {
+    if (newPin.length === 4 && /^\d+$/.test(newPin)) {
+        localStorage.setItem(APP_PIN_KEY, newPin);
+        alert('PIN-код успешно установлен!');
+    } else {
+        alert('PIN-код должен состоять из 4 цифр.');
+    }
+}
+
+function setNewPinFromForm() {
+    const pinInput = document.getElementById('new-pin');
+    const pin = pinInput.value;
+    setNewPin(pin);
+    pinInput.value = '';
+}
+
+// ============================================
+// БЕЗОПАСНОСТЬ: ЭКСПОРТ / ИМПОРТ ДАННЫХ
+// ============================================
+function exportData() {
+    const data = {
+        profile: localStorage.getItem('profile'),
+        relapses: localStorage.getItem('relapses'),
+        app_pin: localStorage.getItem('app_pin'),
+        exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quit-smoking-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importData(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.profile) localStorage.setItem('profile', data.profile);
+            if (data.relapses) localStorage.setItem('relapses', data.relapses);
+            if (data.app_pin) localStorage.setItem('app_pin', data.app_pin);
+            
+            alert('Данные успешно восстановлены!');
+            location.reload();
+        } catch (err) {
+            alert('Ошибка: неверный формат файла резервной копии.');
+        }
+    };
+    reader.readAsText(file);
+    input.value = '';
+}
+
+// ============================================
+// ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ
+// ============================================
 let currentMonth = new Date();
 let sosInterval;
 let breathingInterval;
 
-// Загрузка данных при старте
 document.addEventListener('DOMContentLoaded', () => {
     loadProfile();
     updateStats();
     renderCalendar();
 });
 
-// Навигация между экранами
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
@@ -55,7 +150,6 @@ document.getElementById('profile-form').addEventListener('submit', (e) => {
     alert('Профиль сохранен!');
 });
 
-// Загрузка профиля
 function loadProfile() {
     const profile = JSON.parse(localStorage.getItem('profile'));
     if (profile) {
@@ -71,7 +165,6 @@ function loadProfile() {
     }
 }
 
-// Обновление приветствия
 function updateGreeting() {
     const profile = JSON.parse(localStorage.getItem('profile'));
     if (profile && profile.name) {
@@ -79,7 +172,6 @@ function updateGreeting() {
     }
 }
 
-// Обновление статистики
 function updateStats() {
     const profile = JSON.parse(localStorage.getItem('profile'));
     if (!profile || !profile.quitDate) return;
@@ -89,10 +181,8 @@ function updateStats() {
     const diffTime = today - quitDate;
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
-    // Дни без курения
     document.getElementById('days-clean').textContent = diffDays;
     
-    // Сэкономленные деньги
     const pricePerCigarette = profile.packPrice / profile.cigarettesPerPack;
     const cigarettesNotSmoked = diffDays * profile.cigarettesPerDay;
     const moneySaved = Math.round(cigarettesNotSmoked * pricePerCigarette);
@@ -100,11 +190,9 @@ function updateStats() {
     document.getElementById('money-saved').textContent = `${moneySaved.toLocaleString('ru-RU')} ₽`;
     document.getElementById('cigarettes-not-smoked').textContent = cigarettesNotSmoked;
     
-    // Таймлайн здоровья
     updateHealthTimeline(diffDays);
 }
 
-// Таймлайн восстановления здоровья
 function updateHealthTimeline(days) {
     const milestones = [
         { time: '20 минут', days: 0, text: 'Нормализуется давление и пульс' },
@@ -156,14 +244,12 @@ function renderCalendar() {
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = '';
     
-    // Пустые ячейки до первого дня месяца
     for (let i = 0; i < firstDay; i++) {
         const div = document.createElement('div');
         div.className = 'calendar-day empty';
         grid.appendChild(div);
     }
     
-    // Дни месяца
     const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
         const div = document.createElement('div');
@@ -172,12 +258,10 @@ function renderCalendar() {
         
         const currentDate = new Date(year, month, day);
         
-        // Проверка на сегодня
         if (currentDate.toDateString() === today.toDateString()) {
             div.classList.add('today');
         }
         
-        // Проверка на срыв
         const relapse = relapses.find(r => new Date(r.date).toDateString() === currentDate.toDateString());
         if (relapse) {
             div.classList.add('relapse');
@@ -195,7 +279,6 @@ function changeMonth(delta) {
     renderCalendar();
 }
 
-// Запись о срыве
 function logRelapse() {
     document.getElementById('relapse-modal').classList.add('active');
     document.getElementById('relapse-date').valueAsDate = new Date();
@@ -247,8 +330,7 @@ function startBreathingExercise() {
 }
 
 function startSOSTimer() {
-    let seconds = 180; // 3 минуты
-    
+    let seconds = 180;
     updateTimerDisplay(seconds);
     
     sosInterval = setInterval(() => {
