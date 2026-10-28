@@ -1,55 +1,55 @@
 const cacheName = 'quit-smoking-v1';
+
+// Относительные пути — работают в любом контексте
 const assetsToCache = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/script.js',
-    '/manifest.webmanifest',
-    '/icon-192.png',
-    '/icon-512.png'
+    './',
+    './index.html',
+    './style.css',
+    './script.js',
+    './manifest.webmanifest',
+    './icon-192.png',
+    './icon-512.png'
 ];
 
-// Установка Service Worker
 self.addEventListener('install', (event) => {
-    console.log('Service Worker: установка...');
+    console.log('SW: установка');
     event.waitUntil(
         caches.open(cacheName)
             .then((cache) => {
-                console.log('Service Worker: кэширование файлов');
+                console.log('SW: кэширование');
                 return cache.addAll(assetsToCache);
             })
+            .catch(err => console.error('SW: ошибка кэширования', err))
     );
+    self.skipWaiting();
 });
 
-// Активация
 self.addEventListener('activate', (event) => {
-    console.log('Service Worker: активация');
+    console.log('SW: активация');
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== cacheName) {
-                        console.log('Service Worker: удаление старого кэша');
                         return caches.delete(cache);
                     }
                 })
             );
         })
     );
+    self.clients.claim();
 });
 
-// Обработка запросов
 self.addEventListener('fetch', (event) => {
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
-                if (response) {
-                    return response;
-                }
+                if (response) return response;
                 return fetch(event.request);
             })
             .catch(() => {
-                return caches.match('/index.html');
+                // Если запрос не удался — отдаем главную страницу
+                return caches.match('./index.html');
             })
     );
 });

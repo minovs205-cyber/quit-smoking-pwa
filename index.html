@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Легко бросить курить</title>
     
+    <!-- ВАЖНО: базовый путь для всех ресурсов -->
+    <base href="./">
+    
     <!-- PWA -->
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#4CAF50">
@@ -15,18 +18,15 @@
     <meta name="apple-mobile-web-app-title" content="НеКурю">
     <link rel="apple-touch-icon" href="icon-192.png">
     
-    <!-- Стили -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <!-- Заголовок -->
         <header>
             <h1>🚭 НеКурю</h1>
             <p id="greeting">Привет!</p>
         </header>
 
-        <!-- Главный экран статистики -->
         <div id="main-screen" class="screen active">
             <div class="stats-grid">
                 <div class="stat-card">
@@ -34,13 +34,11 @@
                     <div class="stat-value" id="days-clean">0</div>
                     <div class="stat-label">Дней без курения</div>
                 </div>
-                
                 <div class="stat-card">
                     <div class="stat-icon">💰</div>
                     <div class="stat-value" id="money-saved">0 ₽</div>
                     <div class="stat-label">Сэкономлено</div>
                 </div>
-                
                 <div class="stat-card">
                     <div class="stat-icon">🚬</div>
                     <div class="stat-value" id="cigarettes-not-smoked">0</div>
@@ -48,13 +46,11 @@
                 </div>
             </div>
 
-            <!-- Таймлайн здоровья -->
             <div class="health-timeline">
-                <h3>⏱️ Восстановление организма</h3>
+                <h3>️ Восстановление организма</h3>
                 <div id="health-milestones"></div>
             </div>
 
-            <!-- Кнопки действий -->
             <div class="action-buttons">
                 <button class="btn btn-primary" onclick="showScreen('calendar-screen')">📅 Календарь</button>
                 <button class="btn btn-success" onclick="showScreen('profile-screen')">👤 Профиль</button>
@@ -62,59 +58,27 @@
             </div>
         </div>
 
-        <!-- Экран профиля -->
         <div id="profile-screen" class="screen">
             <h2>Личный профиль</h2>
             <form id="profile-form">
-                <label>
-                    Имя:
-                    <input type="text" id="user-name" required>
-                </label>
-                
-                <label>
-                    Пол:
+                <label>Имя: <input type="text" id="user-name" required></label>
+                <label>Пол:
                     <select id="user-gender">
                         <option value="male">Мужской</option>
                         <option value="female">Женский</option>
                     </select>
                 </label>
-                
-                <label>
-                    Возраст:
-                    <input type="number" id="user-age" min="10" max="120" required>
-                </label>
-                
-                <label>
-                    Дата отказа от курения:
-                    <input type="date" id="quit-date" required>
-                </label>
-                
-                <label>
-                    Сигарет в день (до отказа):
-                    <input type="number" id="cigarettes-per-day" min="1" max="100" required>
-                </label>
-                
-                <label>
-                    Стоимость пачки (₽):
-                    <input type="number" id="pack-price" min="1" required>
-                </label>
-                
-                <label>
-                    Сигарет в пачке:
-                    <input type="number" id="cigarettes-per-pack" min="1" value="20" required>
-                </label>
-                
-                <label>
-                    Цель для сэкономленных денег:
-                    <input type="text" id="savings-goal" placeholder="Например: Новый ноутбук">
-                </label>
-                
+                <label>Возраст: <input type="number" id="user-age" min="10" max="120" required></label>
+                <label>Дата отказа от курения: <input type="date" id="quit-date" required></label>
+                <label>Сигарет в день (до отказа): <input type="number" id="cigarettes-per-day" min="1" max="100" required></label>
+                <label>Стоимость пачки (₽): <input type="number" id="pack-price" min="1" required></label>
+                <label>Сигарет в пачке: <input type="number" id="cigarettes-per-pack" min="1" value="20" required></label>
+                <label>Цель для сэкономленных денег: <input type="text" id="savings-goal" placeholder="Например: Новый ноутбук"></label>
                 <button type="submit" class="btn btn-primary">Сохранить</button>
                 <button type="button" class="btn btn-secondary" onclick="showScreen('main-screen')">Назад</button>
             </form>
         </div>
 
-        <!-- Экран календаря -->
         <div id="calendar-screen" class="screen">
             <h2>Календарь</h2>
             <div class="calendar-header">
@@ -123,12 +87,10 @@
                 <button class="btn btn-small" onclick="changeMonth(1)">→</button>
             </div>
             <div id="calendar-grid" class="calendar-grid"></div>
-            
             <button class="btn btn-warning" onclick="logRelapse()">📝 Отметить срыв</button>
             <button class="btn btn-secondary" onclick="showScreen('main-screen')">Назад</button>
         </div>
 
-        <!-- Модальное окно SOS -->
         <div id="sos-modal" class="modal">
             <div class="modal-content">
                 <h2>🧘 Дыши глубоко</h2>
@@ -141,26 +103,13 @@
             </div>
         </div>
 
-        <!-- Модальное окно срыва -->
         <div id="relapse-modal" class="modal">
             <div class="modal-content">
                 <h2>📝 Запись о срыве</h2>
                 <form id="relapse-form">
-                    <label>
-                        Дата:
-                        <input type="date" id="relapse-date" required>
-                    </label>
-                    
-                    <label>
-                        Количество сигарет:
-                        <input type="number" id="relapse-count" min="1" required>
-                    </label>
-                    
-                    <label>
-                        Триггер (что вызвало желание):
-                        <textarea id="relapse-trigger" rows="3" placeholder="Стресс, алкоголь, компания..."></textarea>
-                    </label>
-                    
+                    <label>Дата: <input type="date" id="relapse-date" required></label>
+                    <label>Количество сигарет: <input type="number" id="relapse-count" min="1" required></label>
+                    <label>Триггер: <textarea id="relapse-trigger" rows="3" placeholder="Стресс, алкоголь, компания..."></textarea></label>
                     <button type="submit" class="btn btn-primary">Сохранить</button>
                     <button type="button" class="btn btn-secondary" onclick="closeRelapseModal()">Отмена</button>
                 </form>
