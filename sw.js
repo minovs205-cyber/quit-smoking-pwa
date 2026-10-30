@@ -1,4 +1,4 @@
-const cacheName = 'quit-smoking-v3';
+const cacheName = 'quit-smoking-v4';
 
 // Относительные пути — работают в любом контексте
 const assetsToCache = [

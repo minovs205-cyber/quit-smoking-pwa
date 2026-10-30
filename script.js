@@ -207,8 +207,6 @@ function updateStats() {
     if (!profile || !profile.quitDate) return;
 
     const quitDate = startOfDay(profile.quitDate);
-    const today = new Date();
-    const daysSinceQuit = Math.max(0, daysBetween(quitDate, today));
     const relapses = getRelapsesSinceQuit(quitDate);
     const streakDays = getCurrentStreakDays(quitDate, relapses);
 
@@ -219,15 +217,13 @@ function updateStats() {
     const cigarettesPerPack = Number(profile.cigarettesPerPack) || 20;
     const pricePerCigarette = cigarettesPerPack > 0 ? packPrice / cigarettesPerPack : 0;
 
-    const expectedCigarettes = daysSinceQuit * cigarettesPerDay;
-    const relapseCigarettes = relapses.reduce((sum, r) => sum + (Number(r.count) || 0), 0);
-    const cigarettesNotSmoked = Math.max(0, expectedCigarettes - relapseCigarettes);
+    // Все карточки считают от текущей серии — без рассинхрона со срывами
+    const cigarettesNotSmoked = streakDays * cigarettesPerDay;
     const moneySaved = Math.round(cigarettesNotSmoked * pricePerCigarette);
 
     document.getElementById('money-saved').textContent = `${moneySaved.toLocaleString('ru-RU')} ₽`;
     document.getElementById('cigarettes-not-smoked').textContent = cigarettesNotSmoked;
 
-    // Таймлайн здоровья — по текущей серии без курения
     updateHealthTimeline(streakDays);
 }
 
