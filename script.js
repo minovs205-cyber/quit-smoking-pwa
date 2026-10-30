@@ -172,25 +172,63 @@ function updateGreeting() {
     }
 }
 
+function startOfDay(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function daysBetween(from, to) {
+    return Math.floor((startOfDay(to) - startOfDay(from)) / (1000 * 60 * 60 * 24));
+}
+
+function getRelapsesSinceQuit(quitDate) {
+    const quit = startOfDay(quitDate);
+    return JSON.parse(localStorage.getItem('relapses') || '[]')
+        .filter(r => r && r.date)
+        .filter(r => startOfDay(r.date) >= quit);
+}
+
+function getCurrentStreakDays(quitDate, relapses) {
+    if (!relapses.length) {
+        return Math.max(0, daysBetween(quitDate, new Date()));
+    }
+
+    const lastRelapseDate = relapses
+        .map(r => startOfDay(r.date))
+        .reduce((latest, date) => (date > latest ? date : latest));
+
+    // Срыв в день X обнуляет серию; следующий день — день 1
+    return Math.max(0, daysBetween(lastRelapseDate, new Date()));
+}
+
 function updateStats() {
     const profile = JSON.parse(localStorage.getItem('profile'));
     if (!profile || !profile.quitDate) return;
-    
-    const quitDate = new Date(profile.quitDate);
+
+    const quitDate = startOfDay(profile.quitDate);
     const today = new Date();
-    const diffTime = today - quitDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    document.getElementById('days-clean').textContent = diffDays;
-    
-    const pricePerCigarette = profile.packPrice / profile.cigarettesPerPack;
-    const cigarettesNotSmoked = diffDays * profile.cigarettesPerDay;
+    const daysSinceQuit = Math.max(0, daysBetween(quitDate, today));
+    const relapses = getRelapsesSinceQuit(quitDate);
+    const streakDays = getCurrentStreakDays(quitDate, relapses);
+
+    document.getElementById('days-clean').textContent = streakDays;
+
+    const cigarettesPerDay = Number(profile.cigarettesPerDay) || 0;
+    const packPrice = Number(profile.packPrice) || 0;
+    const cigarettesPerPack = Number(profile.cigarettesPerPack) || 20;
+    const pricePerCigarette = cigarettesPerPack > 0 ? packPrice / cigarettesPerPack : 0;
+
+    const expectedCigarettes = daysSinceQuit * cigarettesPerDay;
+    const relapseCigarettes = relapses.reduce((sum, r) => sum + (Number(r.count) || 0), 0);
+    const cigarettesNotSmoked = Math.max(0, expectedCigarettes - relapseCigarettes);
     const moneySaved = Math.round(cigarettesNotSmoked * pricePerCigarette);
-    
+
     document.getElementById('money-saved').textContent = `${moneySaved.toLocaleString('ru-RU')} ₽`;
     document.getElementById('cigarettes-not-smoked').textContent = cigarettesNotSmoked;
-    
-    updateHealthTimeline(diffDays);
+
+    // Таймлайн здоровья — по текущей серии без курения
+    updateHealthTimeline(streakDays);
 }
 
 function updateHealthTimeline(days) {
@@ -234,12 +272,13 @@ function renderCalendar() {
     
     document.getElementById('current-month').textContent = `${monthNames[month]} ${year}`;
     
-    const firstDay = new Date(year, month, 1).getDay();
+    // Понедельник = 0 (для RU-календаря)
+    const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
     const relapses = JSON.parse(localStorage.getItem('relapses') || '[]');
     const profile = JSON.parse(localStorage.getItem('profile'));
-    const quitDate = profile ? new Date(profile.quitDate) : null;
+    const quitDate = profile && profile.quitDate ? startOfDay(profile.quitDate) : null;
     
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = '';
@@ -256,17 +295,17 @@ function renderCalendar() {
         div.className = 'calendar-day';
         div.textContent = day;
         
-        const currentDate = new Date(year, month, day);
+        const currentDate = startOfDay(new Date(year, month, day));
         
-        if (currentDate.toDateString() === today.toDateString()) {
+        if (currentDate.toDateString() === startOfDay(today).toDateString()) {
             div.classList.add('today');
         }
         
-        const relapse = relapses.find(r => new Date(r.date).toDateString() === currentDate.toDateString());
+        const relapse = relapses.find(r => startOfDay(r.date).toDateString() === currentDate.toDateString());
         if (relapse) {
             div.classList.add('relapse');
-            div.title = `Срыв: ${relapse.count} сигарет\nТриггер: ${relapse.trigger}`;
-        } else if (quitDate && currentDate >= quitDate && currentDate <= today) {
+            div.title = `Срыв: ${relapse.count} сигарет\nТриггер: ${relapse.trigger || '—'}`;
+        } else if (quitDate && currentDate >= quitDate && currentDate <= startOfDay(today)) {
             div.classList.add('clean');
         }
         
@@ -302,6 +341,7 @@ document.getElementById('relapse-form').addEventListener('submit', (e) => {
     localStorage.setItem('relapses', JSON.stringify(relapses));
     
     closeRelapseModal();
+    updateStats();
     renderCalendar();
     alert('Запись сохранена. Помни: срыв — это не конец пути, а урок!');
 });
